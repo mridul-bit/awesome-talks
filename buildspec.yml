@@ -1,0 +1,28 @@
+version: 0.2
+
+env:
+  variables:
+    ECR_REPO_URI: "980573775109.dkr.ecr.us-east-1.amazonaws.com/awesome-talks"
+    IMAGE_TAG: "latest"
+
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
+
+  build:
+    commands:
+      - echo Building Docker image...
+      - docker build -t awesome-talks:$IMAGE_TAG .
+      - docker tag awesome-talks:$IMAGE_TAG $ECR_REPO_URI:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Pushing Docker image...
+      - docker push $ECR_REPO_URI:$IMAGE_TAG
+      - printf '[{"name":"awesome-talks","imageUri":"%s"}]' $ECR_REPO_URI:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files: imagedefinitions.json
+
